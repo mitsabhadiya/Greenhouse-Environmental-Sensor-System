@@ -1,1 +1,76 @@
+//This Arduino program reads data from the three sensors and displays it on an OLED screen//
 
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 32
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+const int HUMIDITY_PIN = A0;
+const int LIGHT_PIN = A1;
+float humidityVoltage = 0.0;
+float humidityPercentage = 0.0;
+float lightVoltage = 0.0;
+float lightLux = 0.0;
+float calibrateHumidity(float voltage) {
+float minVoltage = 1.0;
+float maxVoltage = 4.0;
+voltage = constrain(voltage, minVoltage, maxVoltage);
+return 35.0 + (voltage - minVoltage) / (maxVoltage - minVoltage) * 15.0;
+}
+float calibrateLight(float voltage) {
+float minVoltage = 0.2;
+float maxvoltage = 5.0;
+voltage = constrain(voltage, minVoltage, maxVoltage);
+return (voltage - minVoltage) / (maxVoltage - minVoltage) * 100.0;
+}
+void setup() {
+Serial.begin(9600);
+if (!display.begin(0x3C)) {
+Serial.println(F("SSD1306 allocation failed"));
+for (;;);
+}
+display.clearDisplay();
+display.setTextSize(1);
+display.setTextColor(SSD1306_WHITE);
+display.setCursor(0, 0);
+display.println("Sensor System Ready...");
+display.display();
+delay(2000);
+}
+void loop() {
+int rawHumidity = analogRead(HUMIDITY_PIN);
+humidityVoltage = (rawHumidity / 1023.0) * 5.0;
+humidityPercentage = calibrateHumidity(humidityVoltage);
+Serial.print("Raw Humidity: ");
+Serial.print(rawHumidity);
+Serial.print(" | Voltage: ");
+Serial.print(humidityVoltage, 2);
+Serial.print(" V | Humidity: ");
+Serial.print(humidityPercentage, 1);
+Serial.println("%");
+int rawLight = analogRead(LIGHT_PIN);
+lightVoltage = (rawLight / 1023.0) * 5.0;
+lightLux = calibrateLight(lightVoltage);
+Serial.print("Raw Light: ");
+Serial.print(rawLight);
+Serial.print(" | Voltage: ");
+Serial.print(lightVoltage, 2);
+Serial.print(" V | Light: ");
+Serial.print(lightLux, 1);
+Serial.println(" lux");
+display.clearDisplay();
+display.setCursor(0, 0);
+display.print("Humidity: ");
+display.print(humidityVoltage, 2);
+display.print("V ");
+display.print(humidityPercentage, 1);
+display.println("%");
+display.print("Light: ");
+display.print(lightVoltage, 2);
+display.print("V ");
+display.print(lightLux, 1);
+display.println(" lux");
+display.display();
+delay(1000);
+}
